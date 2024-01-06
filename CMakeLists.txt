@@ -27,12 +27,27 @@ if (WINDOWS)
     set(CMAKE_EXE_LINKER_FLAGS "-static")
 endif ()
 
+if(APPLE)
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang\$")
+        set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp")
+        set(OpenMP_C_LIB_NAMES "omp")
+        set(OpenMP_omp_LIBRARY omp)
+    endif()
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang\$")
+        set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
+        set(OpenMP_CXX_LIB_NAMES "omp")
+        set(OpenMP_omp_LIBRARY omp)
+    endif()
+
+endif()
+
 #openmp
 FIND_PACKAGE(OpenMP REQUIRED)
 IF(OPENMP_FOUND)
     MESSAGE("openmp found")
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} -I/opt/homebrew//Cellar/libomp/17.0.6/include -L/opt/homebrew//Cellar/libomp/17.0.6/lib/")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -I/opt/homebrew//Cellar/libomp/17.0.6/include -L/opt/homebrew//Cellar/libomp/17.0.6/lib/")
 ENDIF()
 
 # swag
@@ -106,13 +121,13 @@ add_library(TexasSolver
         ${lib_src}
         )
 
-target_link_libraries(TexasSolver fmt)
+target_link_libraries(TexasSolver fmt OpenMP::OpenMP_CXX)
 #target_link_libraries(TexasSolver ${Boost_LIBRARIES})
 
 add_executable(test test/test.cpp)
 add_executable(console_solver src/console.cpp)
-target_link_libraries(test gtest TexasSolver)
-target_link_libraries(console_solver TexasSolver)
+target_link_libraries(test gtest TexasSolver OpenMP::OpenMP_CXX)
+target_link_libraries(console_solver TexasSolver OpenMP::OpenMP_CXX)
 
 #set_property(SOURCE swig/PokerSolver.i PROPERTY CPLUSPLUS ON)
 #SET_SOURCE_FILES_PROPERTIES(PokerSolver.i PROPERTIES CPLUSPLUS ON)
