@@ -49,6 +49,9 @@ IF(OPENMP_FOUND)
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} -I/opt/homebrew//Cellar/libomp/17.0.6/include -L/opt/homebrew//Cellar/libomp/17.0.6/lib/")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -I/opt/homebrew//Cellar/libomp/17.0.6/include -L/opt/homebrew//Cellar/libomp/17.0.6/lib/")
 ENDIF()
+set(CMAKE_PREFIX_PATH "/opt/homebrew/Caskroom/miniconda/base/pkgs/qt-main-5.15.2-hb89354d_10")
+set(CMAKE_INSTALL_RPATH "/opt/homebrew/Caskroom/miniconda/base/pkgs/qt-main-5.15.2-hb89354d_10/lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # swag
 #FIND_PACKAGE(SWIG REQUIRED)
@@ -87,17 +90,19 @@ ENDIF()
 
 # google test
 include_directories(ext/googletest/googletest/include ext/googletest/googletest include)
-add_subdirectory(ext/googletest/googletest)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # string format
 include_directories(ext/fmt/include ext/fmt)
-add_subdirectory(ext/fmt/)
 
 # ppybind11
 include_directories(ext/pybind11/include)
-add_subdirectory(ext/pybind11)
 
 include_directories(include)
+
+find_package(Qt5 COMPONENTS Core Widgets REQUIRED)
+include_directories(${Qt5Core_INCLUDE_DIRS})
+include_directories(${Qt5Widgets_INCLUDE_DIRS})
 
 AUX_SOURCE_DIRECTORY(src lib_src)
 AUX_SOURCE_DIRECTORY(src/compairer lib_src)
@@ -121,13 +126,17 @@ add_library(TexasSolver
         ${lib_src}
         )
 
-target_link_libraries(TexasSolver fmt OpenMP::OpenMP_CXX)
+
+target_link_libraries(TexasSolver OpenMP::OpenMP_CXX)
 #target_link_libraries(TexasSolver ${Boost_LIBRARIES})
 
-add_executable(test test/test.cpp)
 add_executable(console_solver src/console.cpp)
-target_link_libraries(test gtest TexasSolver OpenMP::OpenMP_CXX)
 target_link_libraries(console_solver TexasSolver OpenMP::OpenMP_CXX)
+target_link_libraries(console_solver Qt5::Core Qt5::Widgets)
+find_package(ICU REQUIRED COMPONENTS i18n)
+target_link_libraries(console_solver ICU::i18n)
+link_directories(/opt/homebrew/Cellar//icu4c/73.2/lib /opt/homebrew/Cellar/libpng/1.6.40/lib)
+
 
 #set_property(SOURCE swig/PokerSolver.i PROPERTY CPLUSPLUS ON)
 #SET_SOURCE_FILES_PROPERTIES(PokerSolver.i PROPERTIES CPLUSPLUS ON)
