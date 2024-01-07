@@ -175,6 +175,8 @@ void CommandLineTool::processCommand(string input) {
         this->ps.dump_strategy(QString::fromStdString(output_file),this->dump_rounds);
     }else if(command == "set_dump_rounds"){
         this->dump_rounds = stoi(paramstr);
+    }else if(command == "set_raise_limit"){
+        this->raise_limit = stoi(paramstr);
     }else{
         cout << "command not recognized: " << command << endl;
     }
