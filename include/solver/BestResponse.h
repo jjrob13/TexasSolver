@@ -5,17 +5,17 @@
 #ifndef TEXASSOLVER_BESTRESPONSE_H
 #define TEXASSOLVER_BESTRESPONSE_H
 #include <omp.h>
-#include <ranges/PrivateCards.h>
-#include <compairer/Compairer.h>
-#include <Deck.h>
-#include <ranges/RiverRangeManager.h>
-#include <ranges/PrivateCardsManager.h>
-#include <trainable/CfrPlusTrainable.h>
-#include <trainable/DiscountedCfrTrainable.h>
-#include <nodes/ChanceNode.h>
-#include <nodes/TerminalNode.h>
-#include <nodes/ShowdownNode.h>
-#include <tools/utils.h>
+#include <include/ranges/PrivateCards.h>
+#include <include/compairer/Compairer.h>
+#include <include/Deck.h>
+#include <include/ranges/RiverRangeManager.h>
+#include <include/ranges/PrivateCardsManager.h>
+#include <include/trainable/CfrPlusTrainable.h>
+#include <include/trainable/DiscountedCfrTrainable.h>
+#include <include/nodes/ChanceNode.h>
+#include <include/nodes/TerminalNode.h>
+#include <include/nodes/ShowdownNode.h>
+#include <include/tools/utils.h>
 
 using namespace std;
 
@@ -31,6 +31,7 @@ private:
     bool debug;
     vector<vector<float>> reach_probs;
     int nthreads;
+    int use_halffloats;
 public:
     BestResponse(
             vector<vector<PrivateCards>>& private_combos,
@@ -41,7 +42,8 @@ public:
             bool debug,
             int color_iso_offset[][4],
             GameTreeNode::GameRound split_round,
-            int nthreads = 1
+            int nthreads = 1,
+            int use_halffloats = 0
             );
     float printExploitability(shared_ptr<GameTreeNode> root, int iterationCount, float initial_pot, uint64_t initialBoard);
     float getBestReponseEv(shared_ptr<GameTreeNode> node, int player,vector<vector<float>> reach_probs, uint64_t initialBoard,int deal);

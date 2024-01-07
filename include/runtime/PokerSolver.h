@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by Xuefeng Huang on 2020/2/6.
 //
 
@@ -7,17 +7,19 @@
 
 #include <string>
 #include <vector>
-#include "compairer/Dic5Compairer.h"
-#include "tools/PrivateRangeConverter.h"
-#include "solver/CfrSolver.h"
-#include "solver/PCfrSolver.h"
-#include "library.h"
+#include "include/compairer/Dic5Compairer.h"
+#include "include/tools/PrivateRangeConverter.h"
+#include "include/solver/CfrSolver.h"
+#include "include/solver/PCfrSolver.h"
+#include "include/library.h"
+#include <QDebug>
+#include <QFile>
 using namespace std;
 
 class PokerSolver {
 public:
     PokerSolver();
-    PokerSolver(string ranks,string suits,string compairer_file,int compairer_file_lines);
+    PokerSolver(string ranks,string suits,string compairer_file,int compairer_file_lines,string compairer_file_bin);
     void load_game_tree(string game_tree_file);
     void build_game_tree(
             float oop_commit,
@@ -41,9 +43,17 @@ public:
             int warmup,
             float accuracy,
             bool use_isomorphism,
+            int use_halffloats,
             int threads
             );
-    void dump_strategy(string dump_file,int dump_rounds);
+    void stop();
+    long long estimate_tree_memory(QString range1,QString range2,QString board);
+    vector<PrivateCards> player1Range;
+    vector<PrivateCards> player2Range;
+    void dump_strategy(QString dump_file,int dump_rounds);
+    shared_ptr<GameTree> get_game_tree(){return this->game_tree;};
+    Deck* get_deck(){return &this->deck;}
+    shared_ptr<Solver> get_solver(){return this->solver;}
 private:
     shared_ptr<Dic5Compairer> compairer;
     Deck deck;

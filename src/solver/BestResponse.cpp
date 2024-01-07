@@ -2,11 +2,14 @@
 // Created by Xuefeng Huang on 2020/2/1.
 //
 
-#include "solver/BestResponse.h"
+#include "include/solver/BestResponse.h"
+#include <QtCore>
+#include <QObject>
+#include <QTranslator>
 //#define DEBUG;
 
 BestResponse::BestResponse(vector<vector<PrivateCards>> &private_combos, int player_number,
-                           PrivateCardsManager &pcm, RiverRangeManager &rrm, Deck &deck, bool debug,int color_iso_offset[][4],GameTreeNode::GameRound split_round,int nthreads)
+                           PrivateCardsManager &pcm, RiverRangeManager &rrm, Deck &deck, bool debug,int color_iso_offset[][4],GameTreeNode::GameRound split_round,int nthreads, int use_halffloats)
                            :rrm(rrm),pcm(pcm),private_combos(private_combos),deck(deck){
     this->player_number = player_number;
     this->debug = debug;
@@ -14,7 +17,7 @@ BestResponse::BestResponse(vector<vector<PrivateCards>> &private_combos, int pla
 #ifdef DEBUG
     if(private_combos.size() != player_number)
         throw runtime_error(
-                fmt::format("river combo length NE player nunber: {} -- {}",private_combos.size(),player_number)
+                tfm::format("river combo length NE player nunber: %s -- %s",private_combos.size(),player_number)
         );
 #endif
     player_hands = vector<int>(player_number);
@@ -22,6 +25,7 @@ BestResponse::BestResponse(vector<vector<PrivateCards>> &private_combos, int pla
         player_hands[i] = private_combos[i].size();
     }
     this->nthreads = nthreads;
+    this->use_halffloats = use_halffloats;
     for(int i = 0;i < 52 * 52 * 2;i ++){
         for(int j = 0;j < 4;j ++){
             this->color_iso_offset[i][j] = color_iso_offset[i][j];
@@ -36,24 +40,24 @@ float BestResponse::printExploitability(shared_ptr<GameTreeNode> root, int itera
     if(this->reach_probs.empty())
         this->reach_probs = vector<vector<float>> (this->player_number);
 
-    cout << (fmt::format("Iter: {}",iterationCount)) << endl;
+    qDebug().noquote() << QString::fromStdString(tfm::format(QObject::tr("Iter: %s").toStdString().c_str(),iterationCount));
     float exploitible = 0;
     // 构造双方初始reach probs(按照手牌weights)
     for (int player_id = 0; player_id < this->player_number; player_id++) {
         if(reach_probs[player_id].empty()) {
             reach_probs[player_id] = vector<float>(private_combos[player_id].size());
         }
-        for (int hc = 0; hc < private_combos[player_id].size(); hc++)
+        for (std::size_t hc = 0; hc < private_combos[player_id].size(); hc++)
             reach_probs[player_id][hc] = private_combos[player_id][hc].weight;
     }
 
     for (int player_id = 0; player_id < this->player_number; player_id++) {
         float player_exploitability = getBestReponseEv(root, player_id, reach_probs, initialBoard, 0);
         exploitible += player_exploitability;
-        cout << (fmt::format("player {} exploitability {}", player_id, player_exploitability)) << endl;
+        qDebug().noquote() << (QString::fromStdString(tfm::format(QObject::tr("player %s exploitability %s").toStdString().c_str(), player_id, player_exploitability)));
     }
     float total_exploitability = exploitible / this->player_number / initial_pot * 100;
-    cout << (fmt::format("Total exploitability {} precent", total_exploitability)) << endl;
+    qDebug().noquote() << QString::fromStdString(tfm::format(QObject::tr("Total exploitability %s precent").toStdString().c_str(), total_exploitability));
     return total_exploitability;
 }
 
@@ -65,7 +69,7 @@ float BestResponse::getBestReponseEv(shared_ptr<GameTreeNode> node, int player, 
     vector<PrivateCards>& player_combo = this->private_combos[player];
     vector<PrivateCards>& oppo_combo = this->private_combos[1 - player];
 
-    for(int player_hand = 0;player_hand < player_combo.size();player_hand ++){
+    for(std::size_t player_hand = 0;player_hand < player_combo.size();player_hand ++){
         float one_payoff = private_cards_evs[player_hand];
         PrivateCards& one_player_hand = (player_combo)[player_hand];
         uint64_t private_long = one_player_hand.toBoardLong();
@@ -74,7 +78,7 @@ float BestResponse::getBestReponseEv(shared_ptr<GameTreeNode> node, int player, 
         }
         float oppo_sum = 0;
 
-        for(int oppo_hand = 0;oppo_hand < oppo_combo.size();oppo_hand ++){
+        for(std::size_t oppo_hand = 0;oppo_hand < oppo_combo.size();oppo_hand ++){
             PrivateCards& one_oppo_hand = (oppo_combo)[oppo_hand];
             uint64_t private_long_oppo = one_oppo_hand.toBoardLong();
             if(Card::boardsHasIntercept(private_long,private_long_oppo)
@@ -126,7 +130,7 @@ BestResponse::chanceBestReponse(shared_ptr<ChanceNode> node, int player,const ve
     vector<vector<float>> results(node->getCards().size());
 
     #pragma omp parallel for
-    for(int card = 0;card < node->getCards().size();card ++) {
+    for(std::size_t card = 0;card < node->getCards().size();card ++) {
         shared_ptr<GameTreeNode> one_child = node->getChildren();
         Card one_card = node->getCards()[card];
         uint64_t card_long = Card::boardInt2long(one_card.getCardInt());
@@ -188,13 +192,13 @@ BestResponse::chanceBestReponse(shared_ptr<ChanceNode> node, int player,const ve
             new_deal = card_num * origin_deal + card;
             new_deal += (1 + card_num);
         } else{
-            throw runtime_error(fmt::format("deal out of range : {} ",deal));
+            throw runtime_error(tfm::format("deal out of range : %s ",deal));
         }
         vector<float> child_utility = this->bestResponse(one_child, player, new_reach_probs, new_board_long,new_deal);
         results[one_card.getNumberInDeckInt()] = child_utility;
     }
 
-    for(int card = 0;card < node->getCards().size();card ++) {
+    for(std::size_t card = 0;card < node->getCards().size();card ++) {
         Card *one_card = const_cast<Card *>(&(node->getCards()[card]));
         vector<float> child_utility;
         int offset = this->color_iso_offset[deal][one_card->getCardInt() % 4];
@@ -216,7 +220,7 @@ BestResponse::chanceBestReponse(shared_ptr<ChanceNode> node, int player,const ve
 #ifdef DEBUG
         if(child_utility.size() != chance_utility.size()) throw runtime_error("length not match3 ");
 #endif
-        for(int i = 0;i < child_utility.size();i ++)
+        for(std::size_t i = 0;i < child_utility.size();i ++)
             chance_utility[i] += (child_utility)[i];
     }
 
@@ -238,7 +242,7 @@ BestResponse::actionBestResponse(shared_ptr<ActionNode> node, int player, const 
                 my_exploitability.assign(node_ev.begin(),node_ev.end());
                 first_action_flag = false;
             }else {
-                for (int i = 0;i < node_ev.size();i ++) {
+                for (std::size_t i = 0;i < node_ev.size();i ++) {
                     my_exploitability[i] = max(my_exploitability[i],node_ev[i]);
                 }
             }
@@ -253,7 +257,7 @@ BestResponse::actionBestResponse(shared_ptr<ActionNode> node, int player, const 
         // 如果是别人做决定，那么就按照别人的策略加权算出一个 ev
         vector<float> total_payoffs = vector<float>(player_hands[player]);
         fill(total_payoffs.begin(),total_payoffs.end(),0);
-        shared_ptr<Trainable> trainable = node->getTrainable(deal);
+        shared_ptr<Trainable> trainable = node->getTrainable(deal,true,this->use_halffloats);
 #ifdef DEBUG
         if(trainable == nullptr){
             throw runtime_error("null trainable");
@@ -262,14 +266,14 @@ BestResponse::actionBestResponse(shared_ptr<ActionNode> node, int player, const 
         const vector<float>& node_strategy = trainable->getAverageStrategy();
 #ifdef DEBUG
         if(node_strategy.size() != node->getChildrens().size() * reach_probs[node->getPlayer()].size()) {
-            throw runtime_error(fmt::format("strategy size not match {} - {}",
+            throw runtime_error(tfm::format("strategy size not match %s - %s",
                                                      node_strategy.size(), node->getChildrens().size() * reach_probs[node->getPlayer()].size()));
         }
 #endif
 
         vector<vector<vector<float>>> best_respond_arr_new_reach_probs = vector<vector<vector<float>>>(node->getChildrens().size());
         // 构造reach probs矩阵
-        for(int action_ind = 0;action_ind < node->getChildrens().size();action_ind ++){
+        for(std::size_t action_ind = 0;action_ind < node->getChildrens().size();action_ind ++){
             if(best_respond_arr_new_reach_probs[action_ind].empty()){
                 best_respond_arr_new_reach_probs[action_ind] = vector<vector<float>>(this->player_number);
             }
@@ -303,14 +307,14 @@ BestResponse::actionBestResponse(shared_ptr<ActionNode> node, int player, const 
 #ifdef DEBUG
             if (action_payoffs.size() != total_payoffs.size())
                 throw runtime_error(
-                        fmt::format(
-                                "length not match between action payoffs and total payoffs {} -- {}",
+                        tfm::format(
+                                "length not match between action payoffs and total payoffs %s -- %s",
                                 action_payoffs.size(),total_payoffs.size()
                         )
                 );
 #endif
 
-            for(int i = 0 ;i < total_payoffs.size();i ++){
+            for(std::size_t i = 0 ;i < total_payoffs.size();i ++){
                 total_payoffs[i] += action_payoffs[i];//  * node_strategy[i] 的动作实际上已经在递归的时候做过了，所以这里不需要乘
             }
         }
@@ -346,7 +350,7 @@ BestResponse::terminalBestReponse(shared_ptr<TerminalNode> node, int player, con
     float oppo_prob_sum = 0;
 
     const vector<float>& oppo_reach_prob = reach_probs[1 - player];
-    for(int oppo_hand = 0;oppo_hand < oppo_combs.size(); oppo_hand ++){
+    for(std::size_t oppo_hand = 0;oppo_hand < oppo_combs.size(); oppo_hand ++){
         const RiverCombs& one_hc = oppo_combs[oppo_hand];
         uint64_t one_hc_long  = Card::boardInts2long(one_hc.private_cards.get_hands());
 
@@ -361,7 +365,7 @@ BestResponse::terminalBestReponse(shared_ptr<TerminalNode> node, int player, con
     }
 
 
-    for(int player_hand = 0;player_hand < player_combs.size();player_hand ++) {
+    for(std::size_t player_hand = 0;player_hand < player_combs.size();player_hand ++) {
         const RiverCombs& player_hc = player_combs[player_hand];
         uint64_t player_hc_long = Card::boardInts2long(player_hc.private_cards.get_hands());
         if(Card::boardsHasIntercept(player_hc_long,board_long)){
@@ -409,12 +413,12 @@ BestResponse::showdownBestResponse(shared_ptr<ShowdownNode> node, int player,con
     // 计算胜利时的payoff
     float winsum = 0;
     vector<float> card_winsum(52);
-    for(int i = 0;i < card_winsum.size();i ++) card_winsum[i] = 0;
+    for(std::size_t i = 0;i < card_winsum.size();i ++) card_winsum[i] = 0;
 
-    int j = 0;
+    std::size_t j = 0;
     //if(player_combs.length != oppo_combs.length) throw new RuntimeException("");
 
-    for(int i = 0;i < player_combs.size();i ++){
+    for(std::size_t i = 0;i < player_combs.size();i ++){
         const RiverCombs& one_player_comb = player_combs[i];
         while (j < oppo_combs.size() && one_player_comb.rank < oppo_combs[j].rank){
             const RiverCombs& one_oppo_comb = oppo_combs[j];

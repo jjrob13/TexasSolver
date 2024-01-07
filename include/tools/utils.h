@@ -4,16 +4,16 @@
 
 #ifndef BINDSOLVER_UTILS_H
 #define BINDSOLVER_UTILS_H
-#include <ranges/PrivateCards.h>
-#include <compairer/Compairer.h>
-#include <Deck.h>
-#include <ranges/RiverRangeManager.h>
-#include <ranges/PrivateCardsManager.h>
-#include <trainable/CfrPlusTrainable.h>
-#include <trainable/DiscountedCfrTrainable.h>
-#include <nodes/ChanceNode.h>
-#include <nodes/TerminalNode.h>
-#include <nodes/ShowdownNode.h>
+#include <include/ranges/PrivateCards.h>
+#include <include/compairer/Compairer.h>
+#include <include/Deck.h>
+#include <include/ranges/RiverRangeManager.h>
+#include <include/ranges/PrivateCardsManager.h>
+#include <include/trainable/CfrPlusTrainable.h>
+#include <include/trainable/DiscountedCfrTrainable.h>
+#include <include/nodes/ChanceNode.h>
+#include <include/nodes/TerminalNode.h>
+#include <include/nodes/ShowdownNode.h>
 
 template <typename T>
 void exchange_color(vector<T>& value,vector<PrivateCards> range,int rank1,int rank2){
@@ -24,7 +24,7 @@ void exchange_color(vector<T>& value,vector<PrivateCards> range,int rank1,int ra
     if(value.empty())return;
     vector<int> self_ind = vector<int>(value.size());
     int privateint2ind[52 * 52 * 2] = {0};
-    for(int i = 0;i < range.size();i ++){
+    for(std::size_t i = 0;i < range.size();i ++){
         PrivateCards& pc = range[i];
         int card1 = pc.card1;
         int card2 = pc.card2;
@@ -49,9 +49,9 @@ void exchange_color(vector<T>& value,vector<PrivateCards> range,int rank1,int ra
         privateint2ind[card1 * 52 + card2] = i;
     }
 
-    for(int i = 0;i < range.size();i ++) {
+    for(std::size_t i = 0;i < range.size();i ++) {
         if(self_ind[i] == -1) continue;
-        int ind = privateint2ind[self_ind[i]];
+        std::size_t ind = privateint2ind[self_ind[i]];
         //cout << range[i].toString() << " ";
         //cout << range[ind].toString() << endl;
         if(ind != i){

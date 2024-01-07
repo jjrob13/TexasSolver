@@ -7,9 +7,10 @@
 
 #include "RiverCombs.h"
 #include <unordered_map>
-#include <compairer/Compairer.h>
-#include <compairer/Dic5Compairer.h>
+#include <include/compairer/Compairer.h>
+#include <include/compairer/Dic5Compairer.h>
 #include <mutex>
+#include <memory>
 
 class RiverRangeManager {
 public:

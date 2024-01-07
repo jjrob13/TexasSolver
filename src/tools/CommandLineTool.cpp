@@ -1,27 +1,30 @@
-//
+﻿//
 // Created by bytedance on 7.6.21.
 //
-#include "tools/CommandLineTool.h"
+#include "include/tools/CommandLineTool.h"
+#include <QString>
 
 CommandLineTool::CommandLineTool(string mode,string resource_dir) {
     string suits = "c,d,h,s";
     string ranks;
     this->resource_dir = resource_dir;
-    string compairer_file;
+    string compairer_file,compairer_file_bin;
     int lines;
     if(mode == "holdem"){
         ranks = "2,3,4,5,6,7,8,9,T,J,Q,K,A";
         compairer_file = this->resource_dir + "/compairer/card5_dic_sorted.txt";
+        compairer_file_bin = this->resource_dir + "/compairer/card5_dic_zipped.bin";
         lines = 2598961;
     }else if(mode == "shortdeck"){
         ranks = "6,7,8,9,T,J,Q,K,A";
         compairer_file = this->resource_dir + "/compairer/card5_dic_sorted_shortdeck.txt";
+        compairer_file_bin = this->resource_dir + "/compairer/card5_dic_zipped_shortdeck.bin";
         lines = 376993;
     }else{
-        throw runtime_error(fmt::format("mode not recognized : ",mode));
+        throw runtime_error(tfm::format("mode not recognized : ",mode));
     }
     string logfile_name = "../resources/outputs/outputs_log.txt";
-    this->ps = PokerSolver(ranks,suits,compairer_file,lines);
+    this->ps = PokerSolver(ranks,suits,compairer_file,lines,compairer_file_bin);
 
     StreetSetting gbs_flop_ip = StreetSetting(vector<float>{},vector<float>{},vector<float>{},false);
     StreetSetting gbs_turn_ip = StreetSetting(vector<float>{},vector<float>{},vector<float>{},false);
@@ -91,7 +94,7 @@ void CommandLineTool::processCommand(string input) {
     vector<string> contents;
     split(input,' ',contents);
     if(contents.size() == 0) contents = {input};
-    if(contents.size() > 2 || contents.size() < 1)throw runtime_error(fmt::format("command not valid: {}",input));
+    if(contents.size() > 2 || contents.size() < 1)throw runtime_error(tfm::format("command not valid: %s",input));
     string command = contents[0];
     string paramstr = contents.size() == 1 ? "" : contents[1];
     if(command == "set_pot"){
@@ -109,7 +112,7 @@ void CommandLineTool::processCommand(string input) {
         }else if(board_str_arr.size() == 5){
             this->current_round = 3;
         }else{
-            throw runtime_error(fmt::format("board {} not recognized",this->board));
+            throw runtime_error(tfm::format("board %s not recognized",this->board));
         }
     }else if(command == "set_range_ip"){
         this->range_ip = paramstr;
@@ -133,7 +136,7 @@ void CommandLineTool::processCommand(string input) {
 
         if(bet_type == "bet" || bet_type == "raise" || bet_type == "donk"){
             sizes->clear();
-            for(int i = 3;i < params.size();i ++ ){
+            for(std::size_t i = 3;i < params.size();i ++ ){
                 sizes->push_back(stof(params[i]));
             }
         }
@@ -164,11 +167,12 @@ void CommandLineTool::processCommand(string input) {
                 -1,
                 this->accuracy,
                 this->use_isomorphism,
+                0, // TODO: enable half float option for command line tool
                 this->thread_number
         );
     }else if(command == "dump_result"){
         string output_file = paramstr;
-        this->ps.dump_strategy(output_file,this->dump_rounds);
+        this->ps.dump_strategy(QString::fromStdString(output_file),this->dump_rounds);
     }else if(command == "set_dump_rounds"){
         this->dump_rounds = stoi(paramstr);
     }else{

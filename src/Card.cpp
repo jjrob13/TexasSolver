@@ -2,9 +2,9 @@
 // Created by Xuefeng Huang on 2020/1/28.
 //
 
-#include "Card.h"
+#include "include/Card.h"
 
-Card::Card(){}
+Card::Card(){this->card = "empty";}
 Card::Card(string card,int card_num_in_deck){
     this->card = card;
     this->card_int = Card::strCard2int(this->card);
@@ -15,6 +15,11 @@ Card::Card(string card){
     this->card = card;
     this->card_int = Card::strCard2int(this->card);
     this->card_number_in_deck = -1;
+}
+
+bool Card::empty(){
+    if(this->card == "empty")return true;
+    else return false;
 }
 
 string Card::getCard() {
@@ -38,7 +43,7 @@ int Card::strCard2int(string card) {
     char rank = card.at(0);
     char suit = card.at(1);
     if(card.length() != 2){
-        throw runtime_error( fmt::format("card {} not found",card));
+        throw runtime_error( tfm::format("card %s not found",card));
     }
     return (rankToInt(rank) - 2) * 4 + suitToInt(suit);
 }
@@ -51,7 +56,7 @@ string Card::intCard2Str(int card){
 
 uint64_t Card::boardCards2long(vector<string> cards) {
     vector<Card> cards_objs(cards.size());
-    for(int i = 0;i < cards.size();i++){
+    for(std::size_t i = 0;i < cards.size();i++){
         cards_objs[i] = Card(cards[i]);
     }
     return Card::boardCards2long(cards_objs);
@@ -63,16 +68,25 @@ uint64_t Card::boardCard2long(Card& card){
 
 uint64_t Card::boardCards2long(vector<Card>& cards){
     std::vector<int> board_int(cards.size());
-    for(int i = 0;i < cards.size();i++){
+    for(std::size_t i = 0;i < cards.size();i++){
         board_int[i] = Card::card2int(cards[i]);
     }
     return Card::boardInts2long(board_int);
 }
 
+QString Card::boardCards2html(vector<Card>& cards){
+    QString ret_html = "";
+    for(auto one_card:cards){
+        if(one_card.empty())continue;
+        ret_html += one_card.toFormattedHtml();
+    }
+    return ret_html;
+}
+
 uint64_t Card::boardInt2long(int board){
     // 这里hard code了一副扑克牌是52张
     if(board < 0 || board >= 52){
-        throw runtime_error(fmt::format("Card with id {} not found",board));
+        throw runtime_error(tfm::format("Card with id %s not found",board));
     }
     // uint64_7 的range 在0 ~ + 2^ 64之间,所以不用太担心溢出问题
     return ((uint64_t)(1) << board);
@@ -80,13 +94,13 @@ uint64_t Card::boardInt2long(int board){
 
 uint64_t Card::boardInts2long(const vector<int>& board){
     if(board.size() < 1 || board.size() > 7){
-        throw runtime_error(fmt::format("Card length incorrect: {}",board.size()));
+        throw runtime_error(tfm::format("Card length incorrect: %s",board.size()));
     }
     uint64_t board_long = 0;
     for(int one_card: board){
         // 这里hard code了一副扑克牌是52张
         if(one_card < 0 || one_card >= 52){
-            throw runtime_error(fmt::format("Card with id {} not found",one_card));
+            throw runtime_error(tfm::format("Card with id %s not found",one_card));
         }
         // uint64_7 的range 在0 ~ + 2^ 64之间,所以不用太担心溢出问题
         board_long += ((uint64_t)(1) << one_card);
@@ -111,7 +125,7 @@ vector<int> Card::long2board(uint64_t board_long) {
         board_long = board_long >> 1;
     }
     if (board.size() < 1 || board.size() > 7){
-        throw runtime_error(fmt::format("board length not correct, board length {}",board.size()));
+        throw runtime_error(tfm::format("board length not correct, board length %s",board.size()));
     }
     return board;
 }
@@ -119,15 +133,15 @@ vector<int> Card::long2board(uint64_t board_long) {
 vector<Card> Card::long2boardCards(uint64_t board_long){
         vector<int> board = long2board(board_long);
         vector<Card> board_cards(board.size());
-        for(int i = 0;i < board.size();i ++){
+        for(std::size_t i = 0;i < board.size();i ++){
             int one_board = board[i];
             board_cards[i] = Card(intCard2Str(one_board));
         }
         if (board_cards.size() < 1 || board_cards.size() > 7){
-            throw runtime_error(fmt::format("board length not correct, board length {}",board_cards.size()));
+            throw runtime_error(tfm::format("board length not correct, board length %s",board_cards.size()));
         }
         vector<Card> retval(board_cards.size());
-        for(int i = 0;i < board_cards.size();i ++){
+        for(std::size_t i = 0;i < board_cards.size();i ++){
             retval[i] = board_cards[i];
         }
         return retval;
@@ -205,4 +219,26 @@ vector<string> Card::getSuits(){
 
 string Card::toString() {
     return this->card;
+}
+
+string Card::toFormattedString() {
+    QString qString = QString::fromStdString(this->card);
+    qString = qString.replace("c", "♣️");
+    qString = qString.replace("d", "♦️");
+    qString = qString.replace("h", "♥️");
+    qString = qString.replace("s", "♠️");
+    return qString.toStdString();
+}
+
+QString Card::toFormattedHtml() {
+    QString qString = QString::fromStdString(this->card);
+    if(qString.contains("c"))
+        qString = qString.replace("c", QString::fromLocal8Bit("<span style=\"color:black;\">&#9827;<\/span>"));
+    else if(qString.contains("d"))
+        qString = qString.replace("d", QString::fromLocal8Bit("<span style=\"color:red;\">&#9830;<\/span>"));
+    else if(qString.contains("h"))
+        qString = qString.replace("h", QString::fromLocal8Bit("<span style=\"color:red;\">&#9829;<\/span>"));
+    else if(qString.contains("s"))
+        qString = qString.replace("s", QString::fromLocal8Bit("<span style=\"color:black;\">&#9824;<\/span>"));
+    return qString;
 }

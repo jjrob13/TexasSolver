@@ -2,7 +2,7 @@
 // Created by Xuefeng Huang on 2020/1/31.
 //
 
-#include "tools/PrivateRangeConverter.h"
+#include "include/tools/PrivateRangeConverter.h"
 
 vector<PrivateCards> PrivateRangeConverter::rangeStr2Cards(string range_str, vector<int> initial_boards) {
     vector<string> range_list = string_split(range_str,',');
@@ -30,7 +30,7 @@ vector<PrivateCards> PrivateRangeConverter::rangeStr2Cards(string range_str, vec
             if(one_range.at(2) == 's'){
                 char rank1 = one_range.at(0);
                 char rank2 = one_range.at(1);
-                if(rank1 == rank2) throw runtime_error(fmt::format("{}{}s is not a valid card desc",rank1,rank2));
+                if(rank1 == rank2) throw runtime_error(tfm::format("%s%ss is not a valid card desc",rank1,rank2));
                 for(const string& one_suit :Card::getSuits()){
                     int card1 = Card::strCard2int(rank1 + one_suit);
                     int card2 = Card::strCard2int(rank2 + one_suit);
@@ -43,10 +43,10 @@ vector<PrivateCards> PrivateRangeConverter::rangeStr2Cards(string range_str, vec
                 char rank2 = one_range.at(1);
 
                 vector<string> suits = Card::getSuits();
-                for(int i = 0;i < suits.size();i++){
+                for(std::size_t i = 0;i < suits.size();i++){
                     string one_suit = suits[i];
                     int begin_index = rank1 == rank2 ? i:0;
-                    for(int j = begin_index;j < suits.size();j++){
+                    for(std::size_t j = begin_index;j < suits.size();j++){
                         string another_suit = suits[j];
                         if(one_suit == another_suit){
                             continue;
@@ -70,10 +70,10 @@ vector<PrivateCards> PrivateRangeConverter::rangeStr2Cards(string range_str, vec
             char rank1 = one_range.at(0);
             char rank2 = one_range.at(1);
             vector<string> suits = Card::getSuits();
-            for(int i = 0;i < suits.size();i++){
+            for(std::size_t i = 0;i < suits.size();i++){
                 string one_suit = suits[i];
                 int begin_index = rank1 == rank2 ? i:0;
-                for(int j = begin_index;j < suits.size();j++){
+                for(std::size_t j = begin_index;j < suits.size();j++){
                     string another_suit = suits[j];
                     if(one_suit == another_suit && rank1 == rank2){
                         continue;
@@ -91,22 +91,22 @@ vector<PrivateCards> PrivateRangeConverter::rangeStr2Cards(string range_str, vec
                 }
             }
 
-        }else throw runtime_error(fmt::format(" range str {} len not valid ",one_range));
+        }else throw runtime_error(tfm::format(" range str %s len not valid ",one_range));
     }
 
     // 排除初试range中重复的情况
-    for(int i = 0;i < private_cards.size();i ++){
-        for(int j = i + 1;j < private_cards.size();j ++) {
+    for(std::size_t i = 0;i < private_cards.size();i ++){
+        for(std::size_t j = i + 1;j < private_cards.size();j ++) {
             PrivateCards one_cards = private_cards[i];
             PrivateCards another_cards = private_cards[j];
             if (one_cards.card1 == another_cards.card1 && one_cards.card2 == another_cards.card2){
-                throw runtime_error(fmt::format("card {} {} duplicate"
+                throw runtime_error(tfm::format("card %s %s duplicate"
                         , Card::intCard2Str(one_cards.card1)
                         , Card::intCard2Str(one_cards.card2)
                 ));
             }
             if(one_cards.card1 == another_cards.card2 && one_cards.card2 == another_cards.card1) {
-                throw runtime_error(fmt::format("card {} {} duplicate"
+                throw runtime_error(tfm::format("card %s %s duplicate"
                         , Card::intCard2Str(one_cards.card1)
                         , Card::intCard2Str(one_cards.card2)
                 ));
@@ -115,7 +115,7 @@ vector<PrivateCards> PrivateRangeConverter::rangeStr2Cards(string range_str, vec
     }
 
     vector<PrivateCards> private_cards_list(private_cards.size());
-    for(int i = 0;i < private_cards.size();i ++){
+    for(std::size_t i = 0;i < private_cards.size();i ++){
         private_cards_list[i] = private_cards[i];
         //System.out.print(String.format("[%s-%s]",Card.intCard2Str(private_cards_list[i].card1),Card.intCard2Str(private_cards_list[i].card2)));
     }
